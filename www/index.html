@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>neko0x6a</title>
+    <style>
+        html {
+            color-scheme: light dark;
+        }
+
+
+        * {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 12px
+        }
+
+        pre,
+        pre * {
+            font-family: monospace, 'Courier New', Courier;
+            font-size: 10px;
+            color: gray;
+        }
+
+        code {
+            font-family: monospace, 'Courier New', Courier;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        pre.top {
+            text-align: center;
+        }
+
+        label {
+            flex: none;
+            width: 110px;
+            display: inline-block;
+            font-size: 11px;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main {
+            border: 1px solid gray;
+            padding: 1rem;
+            width: fit-content;
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            border: 1px solid gray;
+            font-size: 11px;
+            padding: 0.2rem;
+        }
+
+        h3 {
+            margin-top: 0;
+        }
+
+        .inp {
+            width: 100%;
+            display: flex;
+            margin-bottom: 0.2rem;
+            align-items: center;
+        }
+
+        .mb0 {
+            margin-bottom: 0;
+        }
+
+        small {
+            font-size: 10px;
+            margin-bottom: 0.3rem;
+            float: left;
+            color: gray;
+        }
+
+        small a {
+            font-size: 10px;
+        }
+
+        button {
+            font-size: 11px;
+            margin: 0.5rem 0;
+            border: 1px solid gray;
+            cursor: pointer;
+            width: 80px;
+        }
+
+        .action {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main">
+        <pre class="top">                  @         @(   
+               (@@ @%    *@@ //  
+             @@/  @@@@@@@@@@ //  
+         @@@@@@@@@@@@@@@@@@@@@/  
+(@@@    @@@@@@@@@@@@@@@@@@@@@@/  
+ %@@@   @@@@@@@@@@ @@@@@@@@ @@@@ 
+   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@ 
+          @@@@@@@@@@@@@@@@@@@(   </pre>
+        <h3 class="mb0">neko0x6a web configuration</h3>
+        <small>neko0x6a for ESP32 - by <a href="//github.com/michioxd" target="_blank"
+                rel="noopener noreferrer">michioxd</a> - <a href="//github.com/michioxd/neko0x6a" target="_blank"
+                rel="noopener noreferrer">GitHub</a></small>
+        <p class="mb0">General</p>
+        <small>This section will configure the neko0x6a web interface.</small>
+        <div class="inp">
+            <label for="CFG_IP">IP Address: </label>
+            <input type="text" value="192.168.4.1" name="CFG_IP" id="CFG_IP">
+        </div>
+        <div class="inp">
+            <label for="CFG_SSID">Wi-Fi AP SSID: </label>
+            <input type="text" value="neko0x6a" name="CFG_SSID" id="CFG_SSID">
+        </div>
+        <div class="inp">
+            <label for="CFG_PASS">Wi-Fi AP Password: </label>
+            <input type="text" value="neko0x6a" name="CFG_PASS" id="CFG_PASS">
+        </div>
+        <div class="inp">
+            <input type="checkbox" for="CFG_WFAP" name="CFG_WFAP" id="CFG_WFAP">
+            <label for="CFG_WFAP">Disable Wi-Fi AP</label>
+        </div>
+        <small>To re-enable but your ESP32 cannot connect to Wi-Fi, connect to your PC via serial and type
+            <code>enableAP</code>.</small>
+        <div class="action"><button>Save</button></div>
+        <p class="mb0">Wi-Fi Connection</p>
+        <small>A Wi-Fi connection is required for neko0x6a to be used.</small>
+        <div class="inp">
+            <label for="WF_SSID">SSID: </label>
+            <input type="text" value="" name="WF_SSID" id="WF_SSID">
+        </div>
+        <div class="inp">
+            <label for="WF_PASS">Password: </label>
+            <input type="text" value="" name="WF_PASS" id="WF_PASS">
+        </div>
+        <div class="action"><button>Save</button></div>
+        <small>After saving your configuration, your ESP32 will reboot. Happy hacking!</small>
+        <pre>IP Address on Wi-Fi: <span id="IP_ADDRESS">0.0.0.0</span><br/>Uptime: <span id="UPTIME">null</span><br />neko0x6a version: <span id="VERSION">0.1</span></pre>
+    </div>
+</body>
+
+</html>
