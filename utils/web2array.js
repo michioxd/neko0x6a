@@ -29,7 +29,7 @@ function fn(fileName) {
 function convertHex(inputString, fileName) {
     return `const char ${fn(fileName)}[] PROGMEM = {${Array.from(minifyHtml(inputString))
         .map((char) => `0x${char.charCodeAt(0).toString(16)}`)
-        .join(', ')}};`;
+        .join(', ')}, 0x00};`;
 }
 
 const files = fs.readdirSync(sourceDir);
