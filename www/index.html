@@ -55,7 +55,8 @@
             flex-direction: column;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        input[type="password"] {
             width: 100%;
             border: 1px solid gray;
             font-size: 11px;
@@ -75,6 +76,10 @@
 
         .mb0 {
             margin-bottom: 0;
+        }
+
+        .mt0 {
+            margin-top: 0;
         }
 
         small {
@@ -101,6 +106,19 @@
             align-items: center;
             justify-content: flex-end;
         }
+
+        .loading {
+            color: #fff;
+            background: rgb(7, 76, 7);
+            border: 1px solid rgb(49, 140, 49);
+            padding: 0.3rem 0.5rem;
+        }
+
+        .loading.err {
+            background: rgb(76, 7, 7);
+            border: 1px solid rgb(140, 49, 49);
+            font-size: 12px;
+        }
     </style>
 </head>
 
@@ -118,27 +136,20 @@
         <small>neko0x6a for ESP32 - by <a href="//github.com/michioxd" target="_blank"
                 rel="noopener noreferrer">michioxd</a> - <a href="//github.com/michioxd/neko0x6a" target="_blank"
                 rel="noopener noreferrer">GitHub</a></small>
+        <div class="loading">
+            Loading configuration...
+        </div>
         <p class="mb0">General</p>
         <small>This section will configure the neko0x6a web interface.</small>
-        <div class="inp">
-            <label for="CFG_IP">IP Address: </label>
-            <input type="text" value="192.168.4.1" name="CFG_IP" id="CFG_IP">
-        </div>
         <div class="inp">
             <label for="CFG_SSID">Wi-Fi AP SSID: </label>
             <input type="text" value="neko0x6a" name="CFG_SSID" id="CFG_SSID">
         </div>
         <div class="inp">
             <label for="CFG_PASS">Wi-Fi AP Password: </label>
-            <input type="text" value="neko0x6a" name="CFG_PASS" id="CFG_PASS">
+            <input type="password" value="neko0x6a" name="CFG_PASS" id="CFG_PASS">
         </div>
-        <div class="inp">
-            <input type="checkbox" for="CFG_WFAP" name="CFG_WFAP" id="CFG_WFAP">
-            <label for="CFG_WFAP">Disable Wi-Fi AP</label>
-        </div>
-        <small>To re-enable but your ESP32 cannot connect to Wi-Fi, connect to your PC via serial and type
-            <code>enableAP</code>.</small>
-        <div class="action"><button>Save</button></div>
+
         <p class="mb0">Wi-Fi Connection</p>
         <small>A Wi-Fi connection is required for neko0x6a to be used.</small>
         <div class="inp">
@@ -147,12 +158,137 @@
         </div>
         <div class="inp">
             <label for="WF_PASS">Password: </label>
-            <input type="text" value="" name="WF_PASS" id="WF_PASS">
+            <input type="password" value="" name="WF_PASS" id="WF_PASS">
         </div>
-        <div class="action"><button>Save</button></div>
-        <small>After saving your configuration, your ESP32 will reboot. Happy hacking!</small>
-        <pre>IP Address on Wi-Fi: <span id="IP_ADDRESS">0.0.0.0</span><br/>Uptime: <span id="UPTIME">null</span><br />neko0x6a version: <span id="VERSION">0.1</span></pre>
+        <p class="mb0">Authentication</p>
+        <small>Secure your neko0x6a web interface configuration, default always admin/admin.</small>
+        <div class="inp">
+            <label for="CFG_USERNAME">Username: </label>
+            <input type="text" value="admin" name="CFG_USERNAME" id="CFG_USERNAME">
+        </div>
+        <div class="inp">
+            <label for="CFG_PASSWORD">Password: </label>
+            <input type="password" value="admin" name="CFG_PASSWORD" id="CFG_PASSWORD">
+        </div>
+        <div class="action"><button id="SAVE_CFG">Save</button></div>
+        <small>After saving your configuration, you must reboot ESP32 to apply change. Happy hacking!</small>
+        <p class="mb0">Reboot device</p>
+        <small>Click this button below to reboot your ESP32.</small>
+        <button id="REBOOT_DEVICE">Reboot</button>
+        <pre>IP Address on AP: <span id="AP_IP">0.0.0.0</span><br />IP Address on Wi-Fi: <span id="IP_ADDRESS">0.0.0.0</span><br/>neko0x6a version: <span id="VERSION">0.1</span></pre>
     </div>
+    <script>
+        function loading(show = true, content = "Loading configuration...", error = false) {
+            if (!show) {
+                document.querySelector(".loading").style.display = "none";
+                document.querySelectorAll("input, button").forEach(function (e) {
+                    e.disabled = false;
+                });
+            } else {
+                document.querySelector(".loading").style.display = "block";
+                document.querySelector(".loading").innerHTML = content;
+                if (error) {
+                    document.querySelector(".loading").classList.add("err");
+                    document.querySelectorAll("input, button").forEach(function (e) {
+                        e.disabled = false;
+                    });
+                } else {
+                    document.querySelector(".loading").classList.remove("err");
+                    document.querySelectorAll("input, button").forEach(function (e) {
+                        e.disabled = true;
+                    });
+                }
+            }
+        }
+        function xhr(method, url, params, callback) {
+            var xhr = new XMLHttpRequest();
+            var query = '';
+            if (params) {
+                var paramArr = [];
+                for (var key in params) {
+                    if (params.hasOwnProperty(key)) {
+                        paramArr.push(encodeURIComponent(key) + '=' + encodeURIComponent(params[key]));
+                    }
+                }
+                query = paramArr.join('&');
+            }
+
+            if (method === 'GET' && query) {
+                url += '?' + query;
+            }
+
+            xhr.open(method, url, true);
+            if (method === 'POST') {
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            }
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    if (callback) {
+                        callback(null, xhr.responseText);
+                    }
+                } else {
+                    if (callback) {
+                        callback(new Error('Request failed with status: ' + xhr.status));
+                    }
+                }
+            };
+
+            xhr.onerror = function () {
+                if (callback) {
+                    callback(new Error('Network error'));
+                }
+            };
+            var data = (method === 'POST') ? query : null;
+            xhr.send(data);
+        }
+        window.onload = function () {
+            loading(true);
+            xhr("GET", "/www/setting.json", {}, function (e, d) {
+                const res = JSON.parse(d);
+                document.getElementById("CFG_SSID").value = res.apSSID;
+                document.getElementById("CFG_PASS").value = res.apPass;
+                document.getElementById("WF_SSID").value = res.nwSSID;
+                document.getElementById("WF_PASS").value = res.nwPass;
+                document.getElementById("CFG_USERNAME").value = res.username;
+                document.getElementById("CFG_PASSWORD").value = res.password;
+                document.getElementById("IP_ADDRESS").innerHTML = res.nwIP;
+                document.getElementById("AP_IP").innerHTML = res.apIP;
+                document.getElementById("VERSION").innerHTML = res.version;
+                loading(false);
+            });
+
+            document.getElementById("REBOOT_DEVICE").addEventListener("click", function () {
+                if (confirm("Are you sure to reboot?")) {
+                    xhr("POST", "/www/reboot.cgi", {}, function (e, d) {
+                        if (d === "OK") {
+                            document.querySelector(".main").innerHTML = `<p class="mb0 mt0">Rebooting...</p><small>Wait 15-30 seconds for your ESP32 to be fully booted, then reload this page.</small>`
+                        } else {
+                            loading(true, "Failed to reboot, please try again!", true);
+                        }
+                    });
+                }
+            });
+
+            document.getElementById("SAVE_CFG").addEventListener("click", function () {
+                loading(true, "Saving configuration...");
+                xhr("POST", "/www/save.cgi", {
+                    CFG_SSID: document.getElementById("CFG_SSID").value,
+                    CFG_PASS: document.getElementById("CFG_PASS").value,
+                    WF_SSID: document.getElementById("WF_SSID").value,
+                    WF_PASS: document.getElementById("WF_PASS").value,
+                    CFG_USERNAME: document.getElementById("CFG_USERNAME").value,
+                    CFG_PASSWORD: document.getElementById("CFG_PASSWORD").value
+                }, function (e, d) {
+                    if (d === "OK") {
+                        loading(false);
+                    } else {
+                        loading(true, "Failed to save, please try again!", true);
+                    }
+                });
+            });
+        }
+    </script>
 </body>
 
 </html>

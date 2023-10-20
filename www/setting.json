@@ -1,0 +1,12 @@
+{
+    "apIP": "0.0.0.0",
+    "nwIP": "0.0.0.0",
+    "apSSID": "neko0x6a",
+    "apPass": "neko0x6a",
+    "nwSSID": "",
+    "nwPass": "",
+    "username": "admin",
+    "password": "admin",
+    "disableAP": false,
+    "version": "0.1"
+}
