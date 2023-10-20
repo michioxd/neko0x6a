@@ -6,6 +6,7 @@
 #include <Preferences.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+#include "components/screen.h"
 #include "headers/display.h"
 #include "headers/preference.h"
 #include "headers/default.h"
@@ -23,6 +24,10 @@ IPAddress NW_IP(0, 0, 0, 0);
 
 bool flashLed = false;
 bool clientConnected = false;
+bool openedConnection = false;
+int memoryUsage = 0;
+int cpuUsage = 0;
+int mode = 0;
 
 void printLog(const char *msg, bool line, bool clear)
 {
@@ -42,17 +47,84 @@ void handleClientRequest(void *arg, uint8_t *data, size_t len)
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT)
     {
         data[len] = 0;
-        if (strcmp((char *)data, "establishConnection") == 0)
+        StaticJsonDocument<256> jsonDocument;
+        DynamicJsonDocument outputDocument(256);
+        String outputJson;
+        DeserializationError error = deserializeJson(jsonDocument, (char *)data);
+
+        if (error)
         {
-            Serial.println(F("[WS] Connection established!"));
-            clientConnected = true;
+            Serial.println(F("[WS] Error parsing JSON"));
+            return;
         }
-        else if (strcmp((char *)data, "sendReboot") == 0)
+
+        if (jsonDocument.containsKey("establishConnection"))
+        {
+            outputDocument["ok"] = !openedConnection;
+            if (openedConnection == false)
+                openedConnection = true;
+            serializeJson(outputDocument, outputJson);
+            ws.textAll(outputJson);
+            return;
+        }
+        else if (jsonDocument.containsKey("requestReboot"))
         {
             Serial.println(F("[WS] Rebooting..."));
             ESP.restart();
         }
+        else if (jsonDocument.containsKey("updateUsage") && jsonDocument.containsKey("memoryUsage") && jsonDocument.containsKey("cpuUsage"))
+        {
+            if (jsonDocument["memoryUsage"].is<int>() && jsonDocument["cpuUsage"].is<int>())
+            {
+                memoryUsage = jsonDocument["memoryUsage"];
+                cpuUsage = jsonDocument["cpuUsage"];
+            }
+        }
+
+        else if (jsonDocument.containsKey("updateMode") && jsonDocument.containsKey("mode"))
+        {
+            if (jsonDocument["mode"] >= 0 && jsonDocument["mode"] <= 2)
+            {
+                mode = jsonDocument["mode"];
+            }
+        }
     }
+}
+
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
+             void *arg, uint8_t *data, size_t len)
+{
+    switch (type)
+    {
+    case WS_EVT_CONNECT:
+        Serial.printf("[WS] WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+        clientConnected = true;
+        break;
+    case WS_EVT_DISCONNECT:
+        Serial.printf("[WS] WebSocket client #%u disconnected\n", client->id());
+        clientConnected = false;
+        openedConnection = false;
+        break;
+    case WS_EVT_DATA:
+        handleClientRequest(arg, data, len);
+        break;
+    case WS_EVT_PONG:
+    case WS_EVT_ERROR:
+        break;
+    }
+}
+
+void printPcUsage()
+{
+    display.setTextSize(2);
+    display.setTextColor(WHITE);
+    display.drawBitmap(0, 0, computerUsageScreen, 128, 64, 1);
+    display.setCursor(40, 10);
+    display.print(cpuUsage);
+    display.print("%");
+    display.setCursor(40, 40);
+    display.print(memoryUsage);
+    display.print("%");
 }
 
 void setup()
@@ -131,7 +203,6 @@ void setup()
 
     server.on("/www/save.cgi", HTTP_POST, [](AsyncWebServerRequest *request)
               {
-    // Check authentication
     if (!request->authenticate(
             preferences.getString("cfg_username", "admin").c_str(),
             preferences.getString("cfg_password", "admin").c_str())) {
@@ -170,6 +241,8 @@ void setup()
                   ESP.restart();
               });
     server.begin();
+    ws.onEvent(onEvent);
+    server.addHandler(&ws);
 
     display.print("OK\nIP: ");
     display.print(AP_IP);
@@ -229,9 +302,16 @@ void loop()
     else
     {
         display.clearDisplay();
-        display.setCursor(0, 0);
-        display.setTextSize(1);
-        display.println("OK");
+
+        switch (mode)
+        {
+        case 0:
+            printPcUsage();
+            break;
+        default:
+            break;
+        }
+
         display.display();
     }
 }
